@@ -1,0 +1,91 @@
+version: '2.2'
+services:
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    expose:
+      - 9201
+      - 9202
+      - 9301
+      - 9302
+    links:
+      - elasticsearch1
+      - elasticsearch2
+    networks:
+      nginx:
+        aliases:
+          - nginx
+          - es1
+          - es2
+      es1:
+      es2:
+
+  elasticsearch1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.2
+    container_name: elasticsearch1
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "network.publish_host=es1"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9201:9200
+    networks:
+      es1:
+        aliases:
+          - es1
+      es2:
+        aliases:
+          - es1
+
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.2
+    container_name: elasticsearch2
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=es1"
+      - "network.publish_host=es2"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9202:9200
+    networks:
+      es1:
+        aliases:
+          - es2
+      es2:
+        aliases:
+          - es2
+
+  elasticsearch3:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.2
+    container_name: elasticsearch3
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=es1:9301,es2:9302"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9203:9200
+    networks:
+      - es3
+      - nginx
+
+networks:
+  es1:
+  es2:
+  es3:
+  nginx:
